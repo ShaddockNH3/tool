@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>版式原型 · tool.attilio.cc</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 0 40px;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+    background: #e9edf3; color: #1f2937;
+  }
+
+  .bar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    padding: 10px 16px; background: #12243d; color: #e8eef7; font-size: 13px;
+  }
+  .bar b { font-weight: 500; }
+  .badge { padding: 2px 8px; border-radius: 4px; font-size: 12px; background: #2f5580; color: #dbe8f7; }
+  .badge.gold { background: #7a5c1e; color: #fff4d6; }
+  .bar-actions { margin-left: auto; display: flex; gap: 6px; }
+  .bar button {
+    padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    border: 1px solid #3f5b7d; background: transparent; color: #dbe8f7;
+  }
+  .bar button.on { background: #2f5580; border-color: #2f5580; color: #fff; }
+
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    padding: 12px 16px; font-size: 12px; color: #5b6577;
+  }
+  .controls button {
+    padding: 5px 11px; border-radius: 6px; font-size: 12px; cursor: pointer;
+    border: 1px solid #c7cfdc; background: #fff; color: #374151;
+  }
+  .controls button:hover { border-color: #8c9bb0; }
+  .controls button.on { background: #1f3f66; border-color: #1f3f66; color: #fff; }
+  .controls input[type=range] { width: 190px; accent-color: #1f3f66; }
+  .controls .sep { width: 1px; height: 18px; background: #ccd4e0; margin: 0 4px; }
+
+  .holder { position: relative; width: 100%; overflow: hidden; }
+  .holder.raw { overflow-x: auto; }
+  .frame {
+    position: absolute; top: 0; left: 0; transform-origin: top left;
+    background: #f4f6fa; border: 1px solid #dde3ec; border-radius: 10px;
+    box-shadow: 0 4px 18px rgba(24, 42, 72, .06); overflow: hidden;
+  }
+  .triptych { display: none; gap: 14px; padding: 0 16px; align-items: flex-start; }
+  .triptych.on { display: flex; }
+  .single.on { display: block; }
+  .single { display: none; }
+  .tri-col { flex: 1 1 0; min-width: 0; }
+  .tri-label { font-size: 12px; color: #5b6577; margin: 0 0 8px; }
+  .tri-label b { font-weight: 500; color: #1f3f66; }
+  .tri-holder { position: relative; width: 100%; overflow: hidden; }
+  .tri-holder .frame { box-shadow: none; }
+
+  .app { --bg:#f4f6fa; --card:#fff; --ink:#1b2436; --ink2:#5b6579; --ink3:#8b95a7;
+    --line:#e5eaf2; --primary:#23408f; --primary2:#eef2fb; --gold:#c9962f; --gold2:#fbf3e2;
+    background: var(--bg); color: var(--ink); min-height: 100%; font-size: 13px; }
+  .app-inner { padding: 0 20px 24px; }
+  .frame.wide .app-inner { max-width: 1120px; margin: 0 auto; }
+
+  .topbar {
+    height: 58px; display: flex; align-items: center; gap: 14px;
+    padding: 0 20px; background: var(--card); border-bottom: 1px solid var(--line);
+  }
+  .topbar-inner { display: flex; align-items: center; gap: 14px; width: 100%; }
+  .frame.wide .topbar-inner { max-width: 1120px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 500; color: var(--primary); white-space: nowrap; }
+  .brand svg { stroke: var(--primary); }
+  .brand .host { font-size: 11px; color: var(--ink3); font-weight: 400; }
+  .top-search { margin-left: auto; display: flex; align-items: center; gap: 7px;
+    height: 32px; padding: 0 10px; min-width: 190px; border: 1px solid var(--line);
+    border-radius: 7px; background: #fafbfe; color: var(--ink3); }
+  .top-search span { font-size: 12px; }
+  .icon-btn {
+    width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink2); cursor: pointer;
+  }
+  .icon-btn:hover { border-color: var(--primary); color: var(--primary); }
+  svg.lucide { width: 17px; height: 17px; stroke-width: 1.8; flex: none; }
+  i[data-lucide] { width: 17px; height: 17px; display: inline-block; flex: none; }
+  body.no-icons i[data-lucide] { border-radius: 5px; background: #dfe5ef; }
+
+  .layout { display: flex; gap: 16px; padding-top: 18px; align-items: flex-start; }
+  .sidebar { width: 210px; flex: none; }
+  .side-label { font-size: 11px; letter-spacing: .08em; color: var(--ink3); padding: 0 10px 8px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 11px; margin-bottom: 4px;
+    border-radius: 8px; color: var(--ink2); cursor: pointer; border: 1px solid transparent;
+    white-space: nowrap;
+  }
+  .nav-item:hover { background: #fff; }
+  .nav-item.on { background: var(--primary2); border-color: #d7e0f5; color: var(--primary); font-weight: 500; }
+  .nav-item.on svg { stroke: var(--primary); }
+  .nav-item .tag { margin-left: auto; font-size: 11px; color: var(--ink3); font-weight: 400; }
+  .side-foot { margin-top: 16px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px;
+    display: flex; align-items: center; gap: 8px; color: var(--ink3); font-size: 12px; }
+
+  .main { flex: 1; min-width: 0; }
+  .page-head { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+  .page-head h1 { font-size: 17px; font-weight: 500; margin: 0; }
+  .page-head .pill { font-size: 11px; color: var(--gold); background: var(--gold2);
+    border: 1px solid #efdcb2; border-radius: 20px; padding: 2px 9px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--ink); }
+  .card-meta { font-size: 11px; color: var(--ink3); }
+  textarea, .input {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; background: #fbfcfe;
+    color: var(--ink); font-size: 13px; line-height: 1.7; padding: 10px 12px; resize: vertical;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", sans-serif;
+  }
+  textarea:focus, .input:focus { outline: none; border-color: var(--primary); background: #fff; }
+  textarea { min-height: 118px; }
+  .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  .output {
+    border: 1px solid var(--line); border-radius: 8px; background: #f7f9fc; padding: 11px 12px;
+    min-height: 118px; white-space: pre-wrap; word-break: break-all; color: var(--ink);
+  }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 10px; margin-bottom: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 13px 14px; }
+  .stat .v { font-size: 22px; font-weight: 500; color: var(--primary); line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 11px; color: var(--ink3); margin-top: 5px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px;
+    border-radius: 7px; border: 1px solid var(--line); background: #fff; color: var(--ink2);
+    font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { border-color: #b9c5dc; }
+  .btn.primary { border-color: var(--primary); color: var(--primary); background: var(--primary2); font-weight: 500; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 3px; gap: 3px; }
+  .seg button { border: 0; background: transparent; color: var(--ink2); font-size: 12px;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  .seg button.on { background: var(--primary2); color: var(--primary); font-weight: 500; }
+  .seg.sm button { padding: 5px 11px; }
+  .field-label { font-size: 11px; color: var(--ink3); margin-bottom: 6px; }
+  .fmt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .alert { display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 9px 12px;
+    border: 1px solid #f0c8c2; background: #fdf3f1; border-radius: 8px; color: #a3402f; font-size: 12px; }
+  .alert.on { display: flex; }
+  .output.b64 { color: var(--primary); letter-spacing: .02em; }
+  .convert-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .convert-row .grow { flex: 1; min-width: 140px; }
+  .select { height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink); font-size: 13px; min-width: 96px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { font-size: 11px; border: 1px solid var(--line); background: #fff; color: var(--ink2);
+    padding: 3px 9px; border-radius: 20px; cursor: pointer; }
+  .chip:hover { border-color: var(--primary); color: var(--primary); }
+  .swap { margin: 12px 0; display: flex; justify-content: center; }
+  .mobile-actions { display: none; }
+  .panel { display: none; }
+  .panel.on { display: block; }
+
+  .frame.narrow .layout { display: block; padding-top: 14px; }
+  .frame.narrow .sidebar { width: 100%; margin-bottom: 14px; }
+  .frame.narrow .side-label, .frame.narrow .side-foot, .frame.narrow .nav-item .tag { display: none; }
+  .frame.narrow .side-nav { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+  .frame.narrow .nav-item { margin: 0; background: #fff; border-color: var(--line); }
+  .frame.narrow .nav-item.on { background: var(--primary2); }
+  .frame.narrow .fmt-grid { grid-template-columns: 1fr; }
+  .frame.narrow .app-inner { padding: 0 16px 24px; }
+  .frame.narrow .topbar { padding: 0 16px; }
+
+  .frame.phone .brand .host, .frame.phone .top-search { display: none; }
+  .frame.phone .topbar { height: 50px; }
+  .frame.phone .topbar-inner > .icon-btn { margin-left: auto; }
+  .frame.phone .app-inner { padding: 0 12px 16px; }
+  .frame.phone .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .frame.phone .stat .v { font-size: 19px; }
+  .frame.phone .page-head h1 { font-size: 16px; }
+  .frame.phone .output.b64 { font-size: 12px; }
+  .frame.phone .card { padding: 12px; }
+  .frame.phone textarea { min-height: 96px; }
+  .frame.phone .mobile-actions {
+    display: flex; gap: 8px; position: sticky; bottom: 0; z-index: 5;
+    padding: 10px 12px; margin: 8px -12px -16px;
+    background: rgba(255,255,255,.96); border-top: 1px solid var(--line);
+  }
+  .frame.phone .mobile-actions .btn { flex: 1; justify-content: center; }
+  .frame.phone .desktop-actions { display: none; }
+  .frame.phone .side-nav { gap: 6px; mask-image: linear-gradient(to right, #000 0, #000 86%, transparent 100%); }
+  .frame.phone .nav-item { padding: 8px 10px; font-size: 12px; }
+
+  .foot { max-width: 1120px; margin: 14px auto 0; padding: 0 16px; font-size: 12px; color: #6b7280; line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span>版式原型 · <b>tool.attilio.cc</b></span>
+  <span>模拟宽度 <b id="w">1440</b> px</span>
+  <span id="zone" class="badge">宽屏 · 双栏</span>
+  <span class="badge">断点 768</span>
+  <span class="badge gold" id="zone2">限宽 1120</span>
+  <span>真实视口 <b id="vw">–</b> px</span>
+  <div class="bar-actions">
+    <button id="modeSingle" class="on">单档</button>
+    <button id="modeTri">三档并排</button>
+    <button id="fitBtn" class="on">适应宽度</button>
+  </div>
+</div>
+
+<div class="controls" id="controls">
+  <span>切一档：</span>
+  <button data-w="390">390 手机</button>
+  <button data-w="480">480</button>
+  <button data-w="768">768 分界</button>
+  <button data-w="769">769</button>
+  <button data-w="1120">1120 限宽</button>
+  <button data-w="1440" class="on">1440</button>
+  <span class="sep"></span>
+  <span>自由拖：</span>
+  <input type="range" id="slider" min="320" max="1440" step="1" value="1440">
+  <span class="sep"></span>
+  <span>点左侧工具名可切换面板</span>
+</div>
+
+<div class="single on" id="single">
+  <div class="holder" id="holder">
+    <div class="frame wide" id="frame">
+      <div class="app">
+        <div class="topbar">
+          <div class="topbar-inner">
+            <div class="brand"><i data-lucide="wrench"></i><span>tool</span><span class="host">attilio.cc</span></div>
+            <div class="top-search"><i data-lucide="search"></i><span>搜索工具</span></div>
+            <button class="icon-btn"><i data-lucide="sun"></i></button>
+          </div>
+        </div>
+        <div class="app-inner">
+          <div class="layout">
+            <aside class="sidebar">
+              <div class="side-label">工具</div>
+              <div class="side-nav" id="sideNav">
+                <div class="nav-item on" data-panel="count"><i data-lucide="type"></i><span>字数统计</span></div>
+                <div class="nav-item" data-panel="format"><i data-lucide="braces"></i><span>JSON / HTML 整理</span></div>
+                <div class="nav-item" data-panel="base64"><i data-lucide="arrow-left-right"></i><span>Base64 转换</span></div>
+                <div class="nav-item" data-panel="base"><i data-lucide="binary"></i><span>进制转换</span></div>
+              </div>
+              <div class="side-foot"><i data-lucide="plus"></i><span>添加工具</span></div>
+            </aside>
+
+            <main class="main">
+              <div class="page-head"><h1 id="pageTitle">字数统计</h1><span class="pill">本地计算</span></div>
+
+              <section class="panel on" data-panel="count">
+                <div class="card">
+                  <div class="card-head"><span class="card-title">输入</span><span class="card-meta" id="inputMeta">0 字符</span></div>
+                  <textarea id="countInput">今天改完了工具站的第一版原型，顺便把 🐋 和 emoji 一起算进去。
+第二行用来测行数，English words too。</textarea>
+                </div>
+                <div class="stat-grid" id="statGrid">
+                  <div class="stat"><div class="v" data-stat="chars">0</div><div class="k">字符</div></div>
+                  <div class="stat"><div class="v" data-stat="han">0</div><div class="k">中文字符</div></div>
+                  <div class="stat"><div class="v" data-stat="words">0</div><div class="k">词数</div></div>
+                  <div class="stat"><div class="v" data-stat="lines">0</div><div class="k">行数</div></div>
+                  <div class="stat"><div class="v" data-stat="bytes">0</div><div class="k">UTF-8 字节</div></div>
+                </div>
+                <div class="row desktop-actions">
+                  <button class="btn" id="clearCount"><i data-lucide="trash-2"></i>清空</button>
+                  <button class="btn primary" id="copyCount"><i data-lucide="copy"></i>复制结果</button>
+                </div>
+              </section>
+
+              <section class="panel" data-panel="format">
+                <div class="card">
+                  <div class="row" style="justify-content:space-between">
+                    <div class="seg" id="fmtKind">
+                      <button class="on" data-kind="json">JSON</button>
+                      <button data-kind="html">HTML</button>
+                    </div>
+                    <div class="row">
+                      <div class="seg sm" id="fmtMode">
+                        <button class="on" data-mode="pretty">美化</button>
+                        <button data-mode="minify">压缩</button>
+                      </div>
+                      <button class="btn" id="copyFmt"><i data-lucide="copy"></i>复制</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="alert" id="fmtAlert"><i data-lucide="alert-circle"></i><span id="fmtAlertText">输入不是合法 JSON</span></div>
+                <div class="fmt-grid">
+                  <div class="card">
+                    <div class="card-head"><span class="card-title">输入</span><span class="card-meta">自动处理</span></div>
+                    <textarea class="code" id="fmtInput">{"name":"attilio","tools":["count","format","base64","base"],"ok":true}</textarea>
+                  </div>
+                  <div class="card">
+                    <div class="card-head"><span class="card-title">输出</span><span class="card-meta" id="fmtMeta">–</span></div>
+                    <div class="output code" id="fmtOutput"></div>
+                  </div>
+                </div>
+                <div class="row desktop-actions">
+                  <button class="btn" id="clearFmt"><i data-lucide="trash-2"></i>清空</button>
+                </div>
+              </section>
+
+              <section class="panel" data-panel="base64">
+                <div class="card">
+                  <div class="row" style="justify-content:space-between">
+                    <div class="seg" id="b64Direction">
+                      <button class="on" data-dir="encode">编码</button>
+                      <button data-dir="decode">解码</button>
+                    </div>
+                    <div class="seg sm" id="b64Variant">
+                      <button class="on" data-variant="std">标准</button>
+                      <button data-variant="url">URL 安全</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="card">
+                  <div class="card-head"><span class="card-title" id="b64InputTitle">输入文本</span><span class="card-meta">UTF-8</span></div>
+                  <textarea class="code" id="b64Input">今天改完了工具站的第一版原型 🐋</textarea>
+                </div>
+                <div class="alert" id="b64Alert"><i data-lucide="alert-circle"></i><span id="b64AlertText">输入不是合法 Base64</span></div>
+                <div class="card">
+                  <div class="card-head">
+                    <span class="card-title" id="b64OutputTitle">Base64</span>
+                    <span class="card-meta" id="b64Meta">–</span>
+                  </div>
+                  <div class="output code b64" id="b64Output"></div>
+                </div>
+                <div class="row desktop-actions">
+                  <button class="btn" id="clearB64"><i data-lucide="trash-2"></i>清空</button>
+                  <button class="btn" id="swapB64"><i data-lucide="arrow-down-up"></i>交换</button>
+                  <button class="btn primary" id="copyB64"><i data-lucide="copy"></i>复制结果</button>
+                </div>
+              </section>
+
+              <section class="panel" data-panel="base">
+                <div class="card">
+                  <div class="convert-row">
+                    <div>
+                      <div class="field-label">源进制</div>
+                      <select class="select" id="fromBase"><option>2</option><option>8</option><option selected>10</option><option>16</option><option>36</option></select>
+                    </div>
+                    <div class="grow">
+                      <div class="field-label">输入</div>
+                      <input class="input code" id="baseInput" value="123456789012345678901234567890">
+                    </div>
+                  </div>
+                  <div class="swap"><button class="icon-btn" id="swapBase"><i data-lucide="arrow-down-up"></i></button></div>
+                  <div class="convert-row">
+                    <div>
+                      <div class="field-label">目标进制</div>
+                      <select class="select" id="toBase"><option>2</option><option>8</option><option>10</option><option selected>16</option><option>36</option></select>
+                    </div>
+                    <div class="grow">
+                      <div class="field-label">输出</div>
+                      <input class="input code" id="baseOutput" readonly>
+                    </div>
+                  </div>
+                  <div class="chips" id="baseChips">
+                    <span class="chip" data-base="2">2</span><span class="chip" data-base="8">8</span>
+                    <span class="chip" data-base="10">10</span><span class="chip" data-base="16">16</span>
+                    <span class="chip" data-base="36">36</span>
+                  </div>
+                </div>
+                <div class="alert" id="baseAlert"><i data-lucide="alert-circle"></i><span id="baseAlertText">输入包含非法字符</span></div>
+                <div class="row desktop-actions">
+                  <button class="btn primary" id="copyBase"><i data-lucide="copy"></i>复制结果</button>
+                </div>
+              </section>
+
+              <div class="mobile-actions">
+                <button class="btn"><i data-lucide="trash-2"></i>清空</button>
+                <button class="btn primary"><i data-lucide="copy"></i>复制结果</button>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="triptych" id="triptych"></div>
+
+<div class="foot">
+  断点 768：大于 768 双栏，小于等于 768 单列侧栏转横向标签，小于等于 480 再切手机档（底部固定操作）。宽屏内容限宽 1120 居中留白。四个面板点左侧导航切换，均为版式示意，交互只做了最小演示。
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+<script>
+  if (window.lucide) { lucide.createIcons(); } else { document.body.classList.add('no-icons'); }
+
+  var frame = document.getElementById('frame');
+  var holder = document.getElementById('holder');
+  var single = document.getElementById('single');
+  var triptych = document.getElementById('triptych');
+  var slider = document.getElementById('slider');
+  var buttons = document.querySelectorAll('.controls button[data-w]');
+  var target = 1440;
+  var qs = new URLSearchParams(location.search).get('w');
+  if (qs && Number(qs) >= 320 && Number(qs) <= 1440) target = Number(qs);
+  var fitted = true;
+  var triMode = false;
+
+  var titles = { count:'字数统计', format:'JSON / HTML 整理', base64:'Base64 转换', base:'进制转换' };
+  var currentPanel = 'count';
+
+  function zone(w) {
+    if (w <= 480) return ['手机档 · 底部操作', 'badge gold', '单列 · 手机'];
+    if (w <= 768) return ['窄屏 · 单列', 'badge gold', '侧栏转横向'];
+    return ['宽屏 · 双栏', 'badge', w > 1120 ? '限宽 1120' : '双栏布局'];
+  }
+
+  function applyClasses(el, w) {
+    el.classList.toggle('wide', w > 768);
+    el.classList.toggle('narrow', w <= 768);
+    el.classList.toggle('phone', w <= 480);
+  }
+
+  function currentScale() {
+    var avail = single.clientWidth - 32;
+    if (avail < 200) avail = 200;
+    return fitted ? Math.min(1, avail / target) : 1;
+  }
+
+  function syncHolderHeight() {
+    if (triMode) return;
+    var h = Math.ceil(frame.offsetHeight * currentScale()) + 'px';
+    if (holder.style.height !== h) holder.style.height = h;
+  }
+
+  function render() {
+    var scale = currentScale();
+    frame.style.width = target + 'px';
+    frame.style.transform = 'scale(' + scale + ')';
+    applyClasses(frame, target);
+    holder.classList.toggle('raw', !fitted);
+    syncHolderHeight();
+
+    var z = zone(target);
+    document.getElementById('w').textContent = target;
+    document.getElementById('vw').textContent = window.innerWidth;
+    var ze = document.getElementById('zone');
+    ze.textContent = z[0]; ze.className = z[1];
+    document.getElementById('zone2').textContent = z[2];
+    slider.value = target;
+    buttons.forEach(function (b) { b.classList.toggle('on', Number(b.dataset.w) === target); });
+  }
+
+  function renderTri() {
+    triptych.innerHTML = '';
+    var widths = [390, 768, 1440];
+    var labels = ['390 手机', '768 分界', '1440 宽屏'];
+    var total = triptych.clientWidth - 32;
+    var col = Math.max(160, (total - 28) / 3);
+    widths.forEach(function (w, i) {
+      var wrap = document.createElement('div');
+      wrap.className = 'tri-col';
+      var label = document.createElement('div');
+      label.className = 'tri-label';
+      label.innerHTML = '<b>' + labels[i] + '</b> · ' + zone(w)[0];
+      var h = document.createElement('div');
+      h.className = 'tri-holder';
+      var clone = frame.cloneNode(true);
+      clone.removeAttribute('id');
+      clone.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+      clone.style.transform = 'none';
+      clone.style.width = w + 'px';
+      applyClasses(clone, w);
+      wrap.appendChild(label); wrap.appendChild(h);
+      triptych.appendChild(wrap);
+      h.appendChild(clone);
+      var s = Math.min(1, col / w);
+      clone.style.transform = 'scale(' + s + ')';
+      h.style.height = Math.ceil(clone.offsetHeight * s) + 'px';
+    });
+  }
+
+  function setMode(tri) {
+    triMode = tri;
+    single.classList.toggle('on', !tri);
+    triptych.classList.toggle('on', tri);
+    document.getElementById('modeSingle').classList.toggle('on', !tri);
+    document.getElementById('modeTri').classList.toggle('on', tri);
+    document.getElementById('controls').style.display = tri ? 'none' : 'flex';
+    if (tri) { render(); renderTri(); } else { render(); }
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener('click', function () { target = Number(b.dataset.w); render(); });
+  });
+  slider.addEventListener('input', function () { target = Number(slider.value); render(); });
+  document.getElementById('modeSingle').addEventListener('click', function () { setMode(false); });
+  document.getElementById('modeTri').addEventListener('click', function () { setMode(true); });
+  document.getElementById('fitBtn').addEventListener('click', function () {
+    fitted = !fitted;
+    this.classList.toggle('on', fitted);
+    this.textContent = fitted ? '适应宽度' : '1:1 原尺寸';
+    render();
+  });
+  window.addEventListener('resize', function () { if (triMode) renderTri(); else render(); });
+  if (window.ResizeObserver) {
+    new ResizeObserver(function () { syncHolderHeight(); }).observe(frame);
+  }
+
+  document.getElementById('sideNav').addEventListener('click', function (e) {
+    var item = e.target.closest('.nav-item');
+    if (!item) return;
+    var key = item.dataset.panel;
+    currentPanel = key;
+    this.querySelectorAll('.nav-item').forEach(function (n) { n.classList.toggle('on', n === item); });
+    frame.querySelectorAll('.panel').forEach(function (p) { p.classList.toggle('on', p.dataset.panel === key); });
+    document.getElementById('pageTitle').textContent = titles[key];
+    render();
+  });
+
+  function copyText(t) {
+    if (navigator.clipboard) navigator.clipboard.writeText(t).catch(function () {});
+  }
+
+  function graphemes(s) {
+    if (window.Intl && Intl.Segmenter) {
+      var seg = new Intl.Segmenter('zh', { granularity: 'grapheme' });
+      var n = 0;
+      for (var _x of seg.segment(s)) n++;
+      return n;
+    }
+    return Array.from(s).length;
+  }
+
+  function updateCount() {
+    var s = document.getElementById('countInput').value;
+    var chars = graphemes(s);
+    var stats = {
+      chars: chars,
+      han: (s.match(/[\u4e00-\u9fff]/g) || []).length,
+      words: (s.match(/[\u4e00-\u9fff]|[a-zA-Z0-9']+/g) || []).length,
+      lines: s ? s.split(/\r\n|\r|\n/).length : 0,
+      bytes: new TextEncoder().encode(s).length
+    };
+    frame.querySelectorAll('[data-stat]').forEach(function (el) { el.textContent = stats[el.dataset.stat]; });
+    document.getElementById('inputMeta').textContent = chars + ' 字符';
+  }
+  document.getElementById('countInput').addEventListener('input', updateCount);
+  document.getElementById('clearCount').addEventListener('click', function () {
+    document.getElementById('countInput').value = ''; updateCount();
+  });
+  document.getElementById('copyCount').addEventListener('click', function () {
+    var out = [];
+    frame.querySelectorAll('[data-stat]').forEach(function (el) {
+      out.push(el.parentElement.querySelector('.k').textContent + '：' + el.textContent);
+    });
+    copyText(out.join('\n'));
+  });
+
+  var fmtKind = 'json', fmtMode = 'pretty';
+  function updateFmt() {
+    var v = document.getElementById('fmtInput').value;
+    var out = document.getElementById('fmtOutput');
+    var alert = document.getElementById('fmtAlert');
+    if (!v.trim()) { out.textContent = ''; alert.classList.remove('on'); return; }
+    if (fmtKind === 'json') {
+      try {
+        var obj = JSON.parse(v);
+        out.textContent = fmtMode === 'pretty' ? JSON.stringify(obj, null, 2) : JSON.stringify(obj);
+        alert.classList.remove('on');
+      } catch (err) {
+        out.textContent = '';
+        document.getElementById('fmtAlertText').textContent = '输入不是合法 JSON：' + err.message;
+        alert.classList.add('on');
+      }
+    } else {
+      out.textContent = fmtMode === 'pretty'
+        ? v.replace(/>\s*</g, '>\n<').replace(/^\s+|\s+$/g, '')
+        : v.replace(/>\s+</g, '><').trim();
+      alert.classList.remove('on');
+    }
+    document.getElementById('fmtMeta').textContent = out.textContent.length + ' 字符';
+  }
+  document.getElementById('fmtInput').addEventListener('input', updateFmt);
+  document.getElementById('fmtKind').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    fmtKind = b.dataset.kind;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    document.getElementById('fmtInput').value = fmtKind === 'json'
+      ? '{"name":"attilio","tools":["count","format","base64","base"],"ok":true}'
+      : '<div class="box"><span>hi</span><span>there</span></div>';
+    updateFmt();
+  });
+  document.getElementById('fmtMode').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    fmtMode = b.dataset.mode;
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    updateFmt();
+  });
+  document.getElementById('copyFmt').addEventListener('click', function () { copyText(document.getElementById('fmtOutput').textContent); });
+  document.getElementById('clearFmt').addEventListener('click', function () { document.getElementById('fmtInput').value = ''; updateFmt(); });
+
+  var b64Dir = 'encode', b64Url = false;
+  function encodeB64(str, urlSafe) {
+    var bytes = new TextEncoder().encode(str);
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    var out = btoa(bin);
+    if (urlSafe) out = out.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    return out;
+  }
+  function decodeB64(str, urlSafe) {
+    var s = str.trim().replace(/\s+/g, '');
+    if (!s) return '';
+    if (urlSafe) s = s.replace(/-/g, '+').replace(/_/g, '/');
+    while (s.length % 4) s += '=';
+    var bin = atob(s);
+    var bytes = new Uint8Array(bin.length);
+    for (var j = 0; j < bin.length; j++) bytes[j] = bin.charCodeAt(j);
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+  var DEMO_TEXT = document.getElementById('b64Input').value;
+  var DEMO_B64 = encodeB64(DEMO_TEXT, false);
+
+  function updateB64() {
+    var v = document.getElementById('b64Input').value;
+    var out = document.getElementById('b64Output');
+    var alert = document.getElementById('b64Alert');
+    try {
+      out.textContent = b64Dir === 'encode' ? encodeB64(v, b64Url) : decodeB64(v, b64Url);
+      alert.classList.remove('on');
+    } catch (err) {
+      out.textContent = '';
+      document.getElementById('b64AlertText').textContent = '输入不是合法 Base64，无法解码';
+      alert.classList.add('on');
+    }
+    document.getElementById('b64Meta').textContent = out.textContent.length + ' 字符';
+  }
+
+  function setB64Direction(dir) {
+    b64Dir = dir;
+    var input = document.getElementById('b64Input');
+    if (input.value === DEMO_TEXT || input.value === DEMO_B64) {
+      input.value = dir === 'encode' ? DEMO_TEXT : DEMO_B64;
+    }
+    document.getElementById('b64InputTitle').textContent = dir === 'encode' ? '输入文本' : '输入 Base64';
+    document.getElementById('b64OutputTitle').textContent = dir === 'encode' ? 'Base64' : '解码结果';
+    document.querySelectorAll('#b64Direction button').forEach(function (x) {
+      x.classList.toggle('on', x.dataset.dir === dir);
+    });
+    updateB64();
+  }
+
+  document.getElementById('b64Direction').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    setB64Direction(b.dataset.dir);
+  });
+  document.getElementById('b64Variant').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    b64Url = b.dataset.variant === 'url';
+    this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    updateB64();
+  });
+  document.getElementById('b64Input').addEventListener('input', updateB64);
+  document.getElementById('clearB64').addEventListener('click', function () {
+    document.getElementById('b64Input').value = ''; updateB64();
+  });
+  document.getElementById('swapB64').addEventListener('click', function () {
+    document.getElementById('b64Input').value = document.getElementById('b64Output').textContent;
+    setB64Direction(b64Dir === 'encode' ? 'decode' : 'encode');
+  });
+  document.getElementById('copyB64').addEventListener('click', function () {
+    copyText(document.getElementById('b64Output').textContent);
+  });
+
+  var digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+  function convert(val, from, to) {
+    var s = val.trim().replace(/\s+/g, '');
+    var neg = s.charAt(0) === '-';
+    if (neg) s = s.slice(1);
+    if (!s) return '';
+    var b = BigInt(from), n = 0n;
+    for (var ch of s.toLowerCase()) {
+      var d = digits.indexOf(ch);
+      if (d < 0 || BigInt(d) >= b) throw new Error('输入包含非法字符或超出 ' + from + ' 进制范围');
+      n = n * b + BigInt(d);
+    }
+    if (n === 0n) return '0';
+    var t = BigInt(to), out = '';
+    while (n > 0n) { out = digits[Number(n % t)] + out; n = n / t; }
+    return (neg ? '-' : '') + out;
+  }
+  function updateBase() {
+    var from = document.getElementById('fromBase').value;
+    var to = document.getElementById('toBase').value;
+    var v = document.getElementById('baseInput').value;
+    var alert = document.getElementById('baseAlert');
+    try {
+      document.getElementById('baseOutput').value = convert(v, from, to);
+      alert.classList.remove('on');
+    } catch (err) {
+      document.getElementById('baseOutput').value = '';
+      document.getElementById('baseAlertText').textContent = err.message;
+      alert.classList.add('on');
+    }
+  }
+  ['fromBase','toBase','baseInput'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', updateBase);
+    document.getElementById(id).addEventListener('change', updateBase);
+  });
+  document.getElementById('swapBase').addEventListener('click', function () {
+    var a = document.getElementById('fromBase'), b = document.getElementById('toBase');
+    var i = document.getElementById('baseInput'), o = document.getElementById('baseOutput');
+    var tmp = a.value; a.value = b.value; b.value = tmp;
+    var tv = i.value; i.value = o.value; o.value = tv;
+    updateBase();
+  });
+  document.getElementById('baseChips').addEventListener('click', function (e) {
+    var c = e.target.closest('.chip'); if (!c) return;
+    document.getElementById('toBase').value = c.dataset.base;
+    updateBase();
+  });
+  document.getElementById('copyBase').addEventListener('click', function () { copyText(document.getElementById('baseOutput').value); });
+
+  var panelActions = {
+    count: { clear: 'clearCount', copy: 'copyCount' },
+    format: { clear: 'clearFmt', copy: 'copyFmt' },
+    base64: { clear: 'clearB64', copy: 'copyB64' },
+    base: { clear: '', copy: 'copyBase' }
+  };
+  frame.querySelectorAll('.mobile-actions .btn').forEach(function (btn, idx) {
+    btn.addEventListener('click', function () {
+      if (idx === 0) {
+        if (currentPanel === 'base') { document.getElementById('baseInput').value = ''; updateBase(); }
+        else document.getElementById(panelActions[currentPanel].clear).click();
+      } else {
+        document.getElementById(panelActions[currentPanel].copy).click();
+      }
+    });
+  });
+
+  var initialPanel = new URLSearchParams(location.search).get('p');
+  if (initialPanel && titles[initialPanel]) {
+    frame.querySelector('.nav-item[data-panel="' + initialPanel + '"]').click();
+  }
+
+  updateCount(); updateFmt(); updateB64(); updateBase(); render();
+</script>
+</body>
+</html>
