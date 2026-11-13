@@ -12,22 +12,16 @@ import {
   darkTheme,
 } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { Wrench, Type, Braces, ArrowLeftRight, Binary, Search, Sun, Moon } from 'lucide-vue-next'
+import { Wrench, Search, Sun, Moon } from 'lucide-vue-next'
 import { themeOverrides } from './theme'
 import { useViewport } from './composables/useViewport'
+import { tools, defaultTool } from './tools/registry'
 
 const route = useRoute()
 const router = useRouter()
 const { isNarrow } = useViewport()
 const keyword = ref('')
 const isDark = ref(false)
-
-const tools = [
-  { label: '字数统计', key: 'word-count', icon: Type },
-  { label: 'JSON / HTML 整理', key: 'json-format', icon: Braces },
-  { label: 'Base64 转换', key: 'base64', icon: ArrowLeftRight },
-  { label: '进制转换', key: 'base-converter', icon: Binary },
-]
 
 const menuOptions = computed<MenuOption[]>(() =>
   tools
@@ -39,8 +33,8 @@ const menuOptions = computed<MenuOption[]>(() =>
     })),
 )
 
-const activeKey = computed(() => String(route.name ?? 'word-count'))
-const currentTitle = computed(() => String(route.meta.title ?? '字数统计'))
+const activeKey = computed(() => String(route.name ?? defaultTool.key))
+const currentTitle = computed(() => String(route.meta.title ?? defaultTool.label))
 
 function navigate(key: string | number) {
   void router.push({ name: String(key) })

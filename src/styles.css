@@ -96,6 +96,14 @@ body {
 .swap { display: flex; justify-content: center; margin: 12px 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 
+.tool-error { margin-bottom: 12px; }
+.metric-grid { margin-bottom: 12px; }
+.date-row { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.date-row .chips { margin-top: 0; }
+.date-headline { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.headline { font-size: 22px; font-weight: 500; color: var(--primary); }
+.headline-sub { font-size: 12px; color: var(--ink-3); }
+
 @media (max-width: 768px) {
   .layout { display: block; padding: 14px 16px 24px; }
   .sidebar { width: 100%; margin-bottom: 14px; }

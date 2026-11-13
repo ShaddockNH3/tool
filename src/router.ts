@@ -1,17 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import WordCount from './views/WordCount.vue'
-import JsonFormat from './views/JsonFormat.vue'
-import Base64View from './views/Base64View.vue'
-import BaseConverter from './views/BaseConverter.vue'
+import { tools, defaultTool } from './tools/registry'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/word-count' },
-  { path: '/word-count', name: 'word-count', component: WordCount, meta: { title: '字数统计' } },
-  { path: '/json-format', name: 'json-format', component: JsonFormat, meta: { title: 'JSON / HTML 整理' } },
-  { path: '/base64', name: 'base64', component: Base64View, meta: { title: 'Base64 转换' } },
-  { path: '/base-converter', name: 'base-converter', component: BaseConverter, meta: { title: '进制转换' } },
-  { path: '/:pathMatch(.*)*', redirect: '/word-count' },
+  { path: '/', redirect: defaultTool.path },
+  ...tools.map<RouteRecordRaw>((tool) => ({
+    path: tool.path,
+    name: tool.key,
+    component: tool.load,
+    meta: { title: tool.label },
+  })),
+  { path: '/:pathMatch(.*)*', redirect: defaultTool.path },
 ]
 
 export const router = createRouter({

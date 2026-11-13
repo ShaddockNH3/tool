@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { NCard, NInput, NSelect, NTag, NButton, NAlert } from 'naive-ui'
+import { ref } from 'vue'
+import { NCard, NInput, NSelect, NTag, NButton } from 'naive-ui'
 import { ArrowDownUp, Copy } from 'lucide-vue-next'
-import ActionBar from '../components/ActionBar.vue'
+import ToolShell from '../components/ToolShell.vue'
 import type { ToolAction } from '../utils/action'
+import { useToolProcessor } from '../composables/useToolProcessor'
 import { convertBase } from '../utils/base'
 import { copyText } from '../utils/clipboard'
 
@@ -15,21 +16,12 @@ const quickBases = [2, 8, 10, 16, 36]
 
 const fromBase = ref(10)
 const toBase = ref(16)
-const input = ref('123456789012345678901234567890')
-const output = ref('')
-const error = ref('')
 
-function run() {
-  error.value = ''
-  try {
-    output.value = convertBase(input.value, fromBase.value, toBase.value)
-  } catch (cause) {
-    output.value = ''
-    error.value = cause instanceof Error ? cause.message : '转换失败'
-  }
-}
-
-watch([fromBase, toBase, input], run, { immediate: true })
+const { input, output, error } = useToolProcessor<string, string>({
+  initial: '123456789012345678901234567890',
+  process: (text) => convertBase(text, fromBase.value, toBase.value),
+  extra: [fromBase, toBase],
+})
 
 function setFrom(value: unknown) {
   fromBase.value = Number(value) || 10
@@ -43,7 +35,7 @@ function swap() {
   const previousFrom = fromBase.value
   fromBase.value = toBase.value
   toBase.value = previousFrom
-  input.value = output.value
+  input.value = output.value ?? ''
 }
 
 const actions: ToolAction[] = [
@@ -51,13 +43,13 @@ const actions: ToolAction[] = [
     label: '复制结果',
     icon: Copy,
     primary: true,
-    run: () => { void copyText(output.value) },
+    run: () => { void copyText(output.value ?? '') },
   },
 ]
 </script>
 
 <template>
-  <div class="tool-page">
+  <ToolShell :actions="actions" :error="error">
     <n-card>
       <div class="convert-row">
         <div>
@@ -83,7 +75,7 @@ const actions: ToolAction[] = [
         </div>
         <div class="grow">
           <div class="field-label">输出</div>
-          <n-input :value="output" readonly />
+          <n-input :value="output ?? ''" readonly />
         </div>
       </div>
 
@@ -100,9 +92,5 @@ const actions: ToolAction[] = [
         </n-tag>
       </div>
     </n-card>
-
-    <n-alert v-if="error" type="error" style="margin-bottom: 12px">{{ error }}</n-alert>
-
-    <ActionBar :actions="actions" />
-  </div>
+  </ToolShell>
 </template>

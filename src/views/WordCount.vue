@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { NCard, NInput, NGrid, NGi, NStatistic } from 'naive-ui'
 import { Trash2, Copy } from 'lucide-vue-next'
-import ActionBar from '../components/ActionBar.vue'
+import ToolShell from '../components/ToolShell.vue'
 import type { ToolAction } from '../utils/action'
 import { countText } from '../utils/count'
 import { copyText } from '../utils/clipboard'
@@ -33,7 +33,7 @@ const actions: ToolAction[] = [
 </script>
 
 <template>
-  <div class="tool-page">
+  <ToolShell :actions="actions">
     <n-card>
       <div class="card-head">
         <span class="card-title">输入</span>
@@ -42,14 +42,12 @@ const actions: ToolAction[] = [
       <n-input v-model:value="text" type="textarea" />
     </n-card>
 
-    <n-grid :cols="cols" :x-gap="10" :y-gap="10" style="margin-bottom: 12px">
+    <n-grid :cols="cols" :x-gap="10" :y-gap="10" class="metric-grid">
       <n-gi v-for="metric in metrics" :key="metric.label">
         <n-card class="metric">
           <n-statistic :label="metric.label" :value="metric.value" />
         </n-card>
       </n-gi>
     </n-grid>
-
-    <ActionBar :actions="actions" />
-  </div>
+  </ToolShell>
 </template>
