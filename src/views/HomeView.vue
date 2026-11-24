@@ -2,30 +2,32 @@
 import { computed, inject, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowRight, Search } from 'lucide-vue-next'
+import { ChevronRight } from 'lucide-vue-next'
 import BrandIcon from '../components/BrandIcon.vue'
-import { UiChip, UiInput } from '../components/ui'
-import { tools } from '../tools/registry'
+import { UiChip } from '../components/ui'
+import { tools, toolGroups } from '../tools/registry'
 
 const router = useRouter()
 const sharedKeyword = inject<Ref<string>>('toolSearchKeyword', ref(''))
-const activeTag = ref('全部')
 
-const tags = computed(() => ['全部', ...Array.from(new Set(tools.map((t) => t.tag)))])
-
-const filteredTools = computed(() => {
+const sections = computed(() => {
   const q = sharedKeyword.value.trim().toLowerCase()
-  return tools.filter((tool) => {
-    const matchTag = activeTag.value === '全部' || tool.tag === activeTag.value
-    if (!matchTag) return false
-    if (!q) return true
-    return (
-      tool.label.toLowerCase().includes(q) ||
-      tool.description.toLowerCase().includes(q) ||
-      tool.tag.toLowerCase().includes(q) ||
-      tool.key.includes(q)
-    )
-  })
+  return toolGroups
+    .map((group) => {
+      const items = tools.filter((tool) => {
+        if (tool.group !== group.id) return false
+        if (!q) return true
+        return (
+          tool.label.toLowerCase().includes(q) ||
+          tool.shortDesc.toLowerCase().includes(q) ||
+          tool.description.toLowerCase().includes(q) ||
+          tool.tag.toLowerCase().includes(q) ||
+          tool.key.includes(q)
+        )
+      })
+      return { ...group, items }
+    })
+    .filter((section) => section.items.length > 0)
 })
 
 function openTool(key: string) {
@@ -35,69 +37,58 @@ function openTool(key: string) {
 
 <template>
   <div class="home-page">
-    <section class="home-hero">
-      <div class="home-hero-head">
-        <BrandIcon :size="40" />
-        <div class="home-hero-copy">
-          <h1>Attilio 工具箱</h1>
-          <p>轻量、开箱即用的在线小工具集合，全部计算在浏览器本地完成。</p>
-        </div>
+    <header class="home-banner">
+      <div class="home-emblem">
+        <BrandIcon :size="52" />
       </div>
+      <h1 class="home-title">Attilio 工具箱</h1>
+      <p class="home-subtitle">
+        纯前端本地运行的轻量小工具集合，零上传、打开即用。
+      </p>
+      <div class="home-meta">
+        <UiChip shape="pill" active :clickable="false">{{ tools.length }} 个工具</UiChip>
+        <UiChip shape="pill" :clickable="false">本地计算</UiChip>
+        <UiChip shape="pill" :clickable="false">按 / 搜索</UiChip>
+      </div>
+    </header>
 
-      <div class="home-hero-controls">
-        <div class="home-search">
-          <UiInput v-model="sharedKeyword" placeholder="搜索工具名称或用途…" clearable>
-            <template #prefix><Search :size="15" /></template>
-          </UiInput>
+    <div v-if="sections.length > 0" class="home-groups">
+      <section v-for="section in sections" :key="section.id" class="home-group">
+        <div class="home-group-head">
+          <component :is="section.icon" :size="15" class="home-group-icon" />
+          <h2>{{ section.label }}</h2>
         </div>
 
-        <div class="home-tags" role="tablist" aria-label="按分类筛选">
-          <UiChip
-            v-for="tag in tags"
-            :key="tag"
-            shape="pill"
-            :active="activeTag === tag"
-            @click="activeTag = tag"
+        <div class="home-list">
+          <button
+            v-for="tool in section.items"
+            :key="tool.key"
+            type="button"
+            class="home-row"
+            @click="openTool(tool.key)"
           >
-            {{ tag }}
-          </UiChip>
-        </div>
-      </div>
-    </section>
-
-    <section class="home-section">
-      <div class="home-section-head">
-        <h2>全部工具</h2>
-        <span class="home-count">{{ filteredTools.length }} / {{ tools.length }}</span>
-      </div>
-
-      <div v-if="filteredTools.length > 0" class="tool-grid">
-        <button
-          v-for="tool in filteredTools"
-          :key="tool.key"
-          type="button"
-          class="tool-card"
-          @click="openTool(tool.key)"
-        >
-          <div class="tool-card-top">
-            <span class="tool-card-icon">
-              <component :is="tool.icon" :size="20" />
+            <span class="home-row-icon">
+              <component :is="tool.icon" :size="18" />
             </span>
-            <UiChip shape="pill" :clickable="false">{{ tool.tag }}</UiChip>
-          </div>
-          <h3 class="tool-card-title">{{ tool.label }}</h3>
-          <p class="tool-card-desc">{{ tool.description }}</p>
-          <div class="tool-card-foot">
-            <span>打开工具</span>
-            <ArrowRight :size="15" class="tool-card-arrow" />
-          </div>
-        </button>
-      </div>
+            <span class="home-row-body">
+              <span class="home-row-title">{{ tool.label }}</span>
+              <span class="home-row-desc">{{ tool.description }}</span>
+            </span>
+            <ChevronRight :size="16" class="home-row-arrow" />
+          </button>
+        </div>
+      </section>
+    </div>
 
-      <div v-else class="home-empty">
-        <p>没有找到匹配“{{ sharedKeyword }}”的工具</p>
-      </div>
-    </section>
+    <div v-else class="home-empty">
+      没有找到匹配“{{ sharedKeyword }}”的工具
+    </div>
+
+    <footer class="home-footer">
+      <span>tool.attilio.cc</span>
+      <span>·</span>
+      <span>从左侧菜单或上方列表选择任意工具开始</span>
+    </footer>
   </div>
 </template>
 
@@ -105,231 +96,214 @@ function openTool(key: string) {
 .home-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
+  padding: 12px 0 24px;
 }
 
-.home-hero {
-  background: var(--card-bg);
-  border-radius: var(--radius-large);
-  padding: 28px;
+.home-banner {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  transition: background-color var(--duration-normal) var(--ease-standard);
-}
-
-.home-hero-head {
-  display: flex;
   align-items: center;
-  gap: 16px;
+  text-align: center;
+  padding: 20px 12px 4px;
 }
 
-.home-hero-copy {
-  min-width: 0;
+.home-emblem {
+  position: relative;
+  margin-bottom: 16px;
 }
 
-.home-hero-copy h1 {
+.home-emblem::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--primary) 24%, transparent) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.home-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--deep-text);
-  line-height: 1.3;
 }
 
-.home-hero-copy p {
-  margin: 6px 0 0;
+.home-subtitle {
+  margin: 8px 0 0;
+  max-width: 460px;
   font-size: 14px;
+  line-height: 1.6;
   color: var(--text-2);
 }
 
-.home-hero-controls {
+.home-meta {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  justify-content: center;
   flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 
-.home-search {
-  width: 100%;
-  max-width: 340px;
-}
-
-.home-tags {
+.home-groups {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.home-group {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.home-section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.home-section-head {
+.home-group-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 4px;
-}
-
-.home-section-head h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--deep-text);
-}
-
-.home-count {
-  font-size: 12px;
-  font-weight: 600;
+  gap: 7px;
+  padding: 0 6px;
   color: var(--content-meta);
-  font-variant-numeric: tabular-nums;
 }
 
-.tool-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+.home-group-icon {
+  color: var(--primary);
 }
 
-.tool-card {
+.home-group-head h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.home-list {
+  background: var(--card-bg);
+  border-radius: var(--radius-large);
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+  gap: 2px;
+  transition: background-color var(--duration-normal) var(--ease-standard);
+}
+
+.home-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   width: 100%;
-  padding: 20px;
+  padding: 13px 14px;
   border: none;
-  border-radius: var(--radius-large);
-  background: var(--card-bg);
+  border-radius: var(--radius-md);
+  background: transparent;
   color: inherit;
   font-family: inherit;
+  text-align: left;
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard),
-    box-shadow var(--duration-fast) var(--ease-standard);
+  transition: background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
-.tool-card:hover {
-  background: var(--btn-card-bg-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+.home-row:hover {
+  background: var(--btn-plain-bg-hover);
 }
 
-:root.dark .tool-card:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+.home-row:active {
+  transform: scale(0.995);
 }
 
-.tool-card:active {
-  transform: scale(0.99);
-}
-
-.tool-card-top {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.tool-card-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
+.home-row-icon {
+  flex: none;
+  width: 38px;
+  height: 38px;
   border-radius: var(--radius-md);
   background: var(--btn-regular-bg);
   color: var(--btn-content);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background-color var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
 }
 
-.tool-card:hover .tool-card-icon {
+.home-row:hover .home-row-icon {
   background: var(--primary);
   color: #ffffff;
 }
 
-:root.dark .tool-card:hover .tool-card-icon {
+:root.dark .home-row:hover .home-row-icon {
   color: oklch(0.16 0.014 var(--hue));
 }
 
-.tool-card-title {
-  margin: 0 0 6px;
-  font-size: 16px;
-  font-weight: 700;
+.home-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-row-title {
+  font-size: 14.5px;
+  font-weight: 600;
   color: var(--deep-text);
 }
 
-.tool-card-desc {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
+.home-row-desc {
+  font-size: 12.5px;
   color: var(--text-2);
-  flex: 1;
+  line-height: 1.5;
 }
 
-.tool-card-foot {
-  margin-top: 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
+.home-row-arrow {
+  flex: none;
+  color: var(--content-meta);
+  transition: transform var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
+}
+
+.home-row:hover .home-row-arrow {
   color: var(--primary);
-}
-
-.tool-card-arrow {
-  transition: transform var(--duration-fast) var(--ease-standard);
-}
-
-.tool-card:hover .tool-card-arrow {
   transform: translateX(3px);
 }
 
 .home-empty {
   background: var(--card-bg);
   border-radius: var(--radius-large);
-  padding: 40px 20px;
+  padding: 36px 20px;
   text-align: center;
   color: var(--content-meta);
 }
 
-.home-empty p {
-  margin: 0;
+.home-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--content-meta);
+  padding-top: 4px;
 }
 
-@media (max-width: 1024px) {
-  .tool-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .home-hero {
-    padding: 20px 16px;
-    gap: 16px;
+@media (max-width: 480px) {
+  .home-page {
+    gap: 20px;
+    padding: 6px 0 16px;
   }
 
-  .home-hero-copy h1 {
-    font-size: 20px;
+  .home-banner {
+    padding: 12px 4px 0;
   }
 
-  .home-search {
-    max-width: none;
+  .home-title {
+    font-size: 22px;
   }
 
-  .tool-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .home-row {
+    padding: 11px 10px;
     gap: 12px;
-  }
-
-  .tool-card {
-    padding: 16px;
   }
 }
 </style>
