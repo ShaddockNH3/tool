@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { NCard, NInput, NSelect, NTag, NButton } from 'naive-ui'
-import { ArrowDownUp, Copy } from 'lucide-vue-next'
+import { computed, ref } from 'vue'
+import { ArrowDownUp, Copy, Check } from 'lucide-vue-next'
 import ToolShell from '../components/ToolShell.vue'
+import { UiButton, UiCard, UiChip, UiInput, UiSelect } from '../components/ui'
+import type { SelectOption } from '../components/ui'
 import type { ToolAction } from '../utils/action'
 import { useToolProcessor } from '../composables/useToolProcessor'
+import { useCopyFeedback } from '../composables/useCopyFeedback'
 import { convertBase } from '../utils/base'
-import { copyText } from '../utils/clipboard'
 
-const baseOptions = Array.from({ length: 35 }, (_, index) => ({
-  label: String(index + 2),
+const baseOptions: SelectOption[] = Array.from({ length: 35 }, (_, index) => ({
+  label: `${index + 2} 进制`,
   value: index + 2,
 }))
 const quickBases = [2, 8, 10, 16, 36]
 
 const fromBase = ref(10)
 const toBase = ref(16)
+const { copied, copy } = useCopyFeedback()
 
 const { input, output, error } = useToolProcessor<string, string>({
   initial: '123456789012345678901234567890',
@@ -23,11 +25,11 @@ const { input, output, error } = useToolProcessor<string, string>({
   extra: [fromBase, toBase],
 })
 
-function setFrom(value: unknown) {
+function setFrom(value: string) {
   fromBase.value = Number(value) || 10
 }
 
-function setTo(value: unknown) {
+function setTo(value: string | number) {
   toBase.value = Number(value) || 10
 }
 
@@ -38,59 +40,61 @@ function swap() {
   input.value = output.value ?? ''
 }
 
-const actions: ToolAction[] = [
+const actions = computed<ToolAction[]>(() => [
   {
     label: '复制结果',
+    activeLabel: '已复制',
     icon: Copy,
+    activeIcon: Check,
+    active: copied.value,
     primary: true,
-    run: () => { void copyText(output.value ?? '') },
+    run: () => { void copy(output.value ?? '') },
   },
-]
+])
 </script>
 
 <template>
   <ToolShell :actions="actions" :error="error">
-    <n-card>
+    <UiCard>
       <div class="convert-row">
-        <div>
+        <div style="width: 118px">
           <div class="field-label">源进制</div>
-          <n-select :value="fromBase" :options="baseOptions" style="width: 110px" @update:value="setFrom" />
+          <UiSelect :model-value="fromBase" :options="baseOptions" @update:model-value="setFrom" />
         </div>
         <div class="grow">
           <div class="field-label">输入</div>
-          <n-input v-model:value="input" />
+          <UiInput v-model="input" mono placeholder="输入待转换数字…" />
         </div>
       </div>
 
       <div class="swap">
-        <n-button quaternary circle @click="swap">
+        <UiButton variant="regular" circle aria-label="交换进制与数值" @click="swap">
           <template #icon><ArrowDownUp :size="16" /></template>
-        </n-button>
+        </UiButton>
       </div>
 
       <div class="convert-row">
-        <div>
+        <div style="width: 118px">
           <div class="field-label">目标进制</div>
-          <n-select :value="toBase" :options="baseOptions" style="width: 110px" @update:value="setTo" />
+          <UiSelect :model-value="toBase" :options="baseOptions" @update:model-value="setTo" />
         </div>
         <div class="grow">
           <div class="field-label">输出</div>
-          <n-input :value="output ?? ''" readonly />
+          <UiInput :model-value="output ?? ''" readonly mono />
         </div>
       </div>
 
       <div class="chips">
-        <n-tag
+        <UiChip
           v-for="base in quickBases"
           :key="base"
-          size="small"
-          :bordered="false"
-          :type="toBase === base ? 'primary' : 'default'"
+          shape="rectangle"
+          :active="toBase === base"
           @click="setTo(base)"
         >
-          {{ base }}
-        </n-tag>
+          {{ base }} 进制
+        </UiChip>
       </div>
-    </n-card>
+    </UiCard>
   </ToolShell>
 </template>

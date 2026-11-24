@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NButton } from 'naive-ui'
+import { UiButton } from './ui'
 import type { ToolAction } from '../utils/action'
 
 defineProps<{ actions: ToolAction[] }>()
@@ -7,16 +7,19 @@ defineProps<{ actions: ToolAction[] }>()
 
 <template>
   <div class="action-bar">
-    <n-button
+    <UiButton
       v-for="action in actions"
       :key="action.label"
-      :class="{ 'is-primary': action.primary }"
+      :variant="action.primary ? 'primary' : 'regular'"
       @click="action.run"
     >
-      <template v-if="action.icon" #icon>
-        <component :is="action.icon" :size="16" />
+      <template v-if="action.active && action.activeIcon ? action.activeIcon : action.icon" #icon>
+        <component
+          :is="action.active && action.activeIcon ? action.activeIcon : action.icon"
+          :size="16"
+        />
       </template>
-      {{ action.label }}
-    </n-button>
+      {{ action.active && action.activeLabel ? action.activeLabel : action.label }}
+    </UiButton>
   </div>
 </template>

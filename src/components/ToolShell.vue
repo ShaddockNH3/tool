@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NAlert } from 'naive-ui'
+import { UiAlert } from './ui'
 import ActionBar from './ActionBar.vue'
 import type { ToolAction } from '../utils/action'
 
@@ -9,7 +9,7 @@ withDefaults(defineProps<{ actions: ToolAction[]; error?: string }>(), { error: 
 <template>
   <div class="tool-page">
     <slot name="top" />
-    <n-alert v-if="error" type="error" class="tool-error">{{ error }}</n-alert>
+    <UiAlert :message="error" />
     <slot />
     <ActionBar :actions="actions" />
   </div>

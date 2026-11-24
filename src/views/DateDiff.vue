@@ -1,26 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { NCard, NGrid, NGi, NStatistic, NDatePicker, NTag } from 'naive-ui'
-import { RotateCcw, Copy } from 'lucide-vue-next'
+import { RotateCcw, Copy, Check } from 'lucide-vue-next'
 import ToolShell from '../components/ToolShell.vue'
+import { UiCard, UiChip, UiDatePicker, UiMetricCard } from '../components/ui'
 import type { ToolAction } from '../utils/action'
 import { useToolProcessor } from '../composables/useToolProcessor'
+import { useCopyFeedback } from '../composables/useCopyFeedback'
 import { diffFromToday, describeDiff, todayISO, addDays, sameDayNextYear } from '../utils/dateDiff'
 import type { DateDiffResult } from '../utils/dateDiff'
-import { copyText } from '../utils/clipboard'
-import { useViewport } from '../composables/useViewport'
-
-const { isNarrow, isPhone } = useViewport()
 
 const today = todayISO()
 const initial = addDays(today, 100)
+const { copied, copy } = useCopyFeedback()
 
 const { input, output, error } = useToolProcessor<string, DateDiffResult>({
   initial,
   process: (text) => diffFromToday(text, today),
 })
-
-const cols = computed(() => (isPhone.value ? 2 : isNarrow.value ? 3 : 5))
 
 const headline = computed(() => (output.value ? describeDiff(output.value) : ''))
 
@@ -43,7 +39,7 @@ const quickPicks = computed(() => [
   { label: '明年今天', value: sameDayNextYear(today) },
 ])
 
-function setDate(value: string | null) {
+function setDate(value: string) {
   if (value) input.value = value
 }
 
@@ -53,55 +49,56 @@ const summary = computed(() => {
   return `${result.target}：${describeDiff(result)}（${result.weekday}）`
 })
 
-const actions: ToolAction[] = [
+const actions = computed<ToolAction[]>(() => [
   { label: '重置', icon: RotateCcw, run: () => { input.value = initial } },
-  { label: '复制结果', icon: Copy, primary: true, run: () => { void copyText(summary.value) } },
-]
+  {
+    label: '复制结果',
+    activeLabel: '已复制',
+    icon: Copy,
+    activeIcon: Check,
+    active: copied.value,
+    primary: true,
+    run: () => { void copy(summary.value) },
+  },
+])
 </script>
 
 <template>
   <ToolShell :actions="actions" :error="error">
-    <n-card>
+    <UiCard>
       <div class="date-row">
         <div>
           <div class="field-label">目标日期</div>
-          <n-date-picker
-            :formatted-value="input"
-            value-format="yyyy-MM-dd"
-            type="date"
-            :clearable="false"
-            style="width: 176px"
-            @update:formatted-value="setDate"
-          />
+          <UiDatePicker :model-value="input" style="width: 176px" @update:model-value="setDate" />
         </div>
         <div class="chips">
-          <n-tag
+          <UiChip
             v-for="pick in quickPicks"
             :key="pick.label"
-            size="small"
-            :bordered="false"
-            :type="input === pick.value ? 'primary' : 'default'"
+            shape="pill"
+            :active="input === pick.value"
             @click="setDate(pick.value)"
           >
             {{ pick.label }}
-          </n-tag>
+          </UiChip>
         </div>
       </div>
-    </n-card>
+    </UiCard>
 
-    <n-card>
+    <UiCard>
       <div class="date-headline">
         <span class="headline">{{ headline }}</span>
         <span class="headline-sub">{{ output?.target }} · 今天 {{ output?.today }}</span>
       </div>
-    </n-card>
+    </UiCard>
 
-    <n-grid :cols="cols" :x-gap="10" :y-gap="10" class="metric-grid">
-      <n-gi v-for="metric in metrics" :key="metric.label">
-        <n-card class="metric">
-          <n-statistic :label="metric.label" :value="metric.value" />
-        </n-card>
-      </n-gi>
-    </n-grid>
+    <div class="metric-grid">
+      <UiMetricCard
+        v-for="metric in metrics"
+        :key="metric.label"
+        :label="metric.label"
+        :value="metric.value"
+      />
+    </div>
   </ToolShell>
 </template>
