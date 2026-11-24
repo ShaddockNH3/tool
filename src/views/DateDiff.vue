@@ -67,9 +67,9 @@ const actions = computed<ToolAction[]>(() => [
   <ToolShell :actions="actions" :error="error">
     <UiCard>
       <div class="date-row">
-        <div>
+        <div class="date-picker-col">
           <div class="field-label">目标日期</div>
-          <UiDatePicker :model-value="input" style="width: 176px" @update:model-value="setDate" />
+          <UiDatePicker :model-value="input" style="width: 100%" @update:model-value="setDate" />
         </div>
         <div class="chips">
           <UiChip

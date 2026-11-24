@@ -37,6 +37,8 @@ withDefaults(
   background: var(--card-bg);
   border-radius: var(--radius-large);
   padding: 18px;
+  min-width: 0;
+  max-width: 100%;
   transition: background-color var(--duration-normal) var(--ease-standard);
 }
 

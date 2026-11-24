@@ -57,7 +57,7 @@ const actions = computed<ToolAction[]>(() => [
   <ToolShell :actions="actions" :error="error">
     <UiCard>
       <div class="convert-row">
-        <div style="width: 118px">
+        <div class="convert-select-col">
           <div class="field-label">源进制</div>
           <UiSelect :model-value="fromBase" :options="baseOptions" @update:model-value="setFrom" />
         </div>
@@ -74,7 +74,7 @@ const actions = computed<ToolAction[]>(() => [
       </div>
 
       <div class="convert-row">
-        <div style="width: 118px">
+        <div class="convert-select-col">
           <div class="field-label">目标进制</div>
           <UiSelect :model-value="toBase" :options="baseOptions" @update:model-value="setTo" />
         </div>
